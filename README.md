@@ -1,7 +1,7 @@
 <div align="center">
     <img alt="JetKVM logo" src="https://jetkvm.com/logo-blue.png" height="28">
 
-### JetKVM ATX Power Control Firmware
+### ATX Power Control Firmware
 
 [Discord](https://jetkvm.com/discord) | [Website](https://jetkvm.com) | [Issues](https://github.com/jetkvm/cloud-api/issues) | [Docs](https://jetkvm.com/docs)
 
@@ -14,7 +14,6 @@ This is an ATX power control module for the JetKVM platform, built on the Raspbe
 ## Features
 - Remote control of PC power and reset buttons via UART interface
 - Power and HDD activity LED status monitoring
-
 
 If you've found an issue and want to report it, please check our [Issues](https://github.com/jetkvm/atx-extension-firmware/issues) page. Make sure the description contains information about the firmware version you're using, your hardware setup, and a clear explanation of the steps to reproduce the issue.
 

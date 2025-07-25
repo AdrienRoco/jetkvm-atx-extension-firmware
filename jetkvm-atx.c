@@ -27,6 +27,9 @@
 #define CASE_LED_HDD_PIN 27
 #define CASE_LED_PWR_PIN 28
 
+// Built-in LED
+#define BUILTIN_LED_PIN 25
+
 #define UART_BUF_SIZE 128
 static char uart_buf[UART_BUF_SIZE];
 static int uart_buf_pos = 0;
@@ -52,10 +55,12 @@ void on_uart_line(const char *line)
     else if (strcmp(line, "BTN_PWR_ON\n") == 0)
     {
         gpio_put(MB_BTN_PWR_PIN, 1);
+        gpio_put(BUILTIN_LED_PIN, 1); // Turn on LED when power button pressed via UART
     }
     else if (strcmp(line, "BTN_PWR_OFF\n") == 0)
     {
         gpio_put(MB_BTN_PWR_PIN, 0);
+        gpio_put(BUILTIN_LED_PIN, 0); // Turn off LED when power button released via UART
     }
 }
 
@@ -139,6 +144,16 @@ int main()
     gpio_set_dir(CASE_LED_PWR_PIN, GPIO_OUT);
     gpio_put(CASE_LED_PWR_PIN, 0);
 
+    // Setup built-in LED
+    gpio_init(BUILTIN_LED_PIN);
+    gpio_set_dir(BUILTIN_LED_PIN, GPIO_OUT);
+    gpio_put(BUILTIN_LED_PIN, 1); // Turn on LED at startup
+
+    printf("Built-in LED turned on for 5 seconds...\n");
+    sleep_ms(5000);               // Keep LED on for 5 seconds
+    gpio_put(BUILTIN_LED_PIN, 0); // Turn off LED
+    printf("Built-in LED turned off\n");
+
     // State tracking
     bool btn_rst_state = false;
     bool btn_pwr_state = false;
@@ -188,6 +203,8 @@ int main()
         {
             // Button state is stable, pass it through
             gpio_put(MB_BTN_PWR_PIN, case_btn_pwr_current);
+            // Turn LED on/off based on power button state
+            gpio_put(BUILTIN_LED_PIN, case_btn_pwr_current);
         }
 
         bool states_changed = new_led_hdd_state != led_hdd_state ||

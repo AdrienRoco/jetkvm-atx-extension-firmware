@@ -18,25 +18,30 @@
 #define UART_BUF_SIZE 128
 static char uart_buf[UART_BUF_SIZE];
 static int uart_buf_pos = 0;
+static volatile bool btn_command_received = false;
 
 void on_uart_line(const char *line)
 {
     printf("UART LINE: %s\n", line);
     if (strcmp(line, "BTN_RST_ON\n") == 0)
     {
-        gpio_put(BTN_RST_PIN, 1);
+        gpio_put(BTN_RST_PIN, 0);
+        btn_command_received = true;
     }
     else if (strcmp(line, "BTN_RST_OFF\n") == 0)
     {
-        gpio_put(BTN_RST_PIN, 0);
+        gpio_put(BTN_RST_PIN, 1);
+        btn_command_received = true;
     }
     else if (strcmp(line, "BTN_PWR_ON\n") == 0)
     {
-        gpio_put(BTN_PWR_PIN, 1);
+        gpio_put(BTN_PWR_PIN, 0);
+        btn_command_received = true;
     }
     else if (strcmp(line, "BTN_PWR_OFF\n") == 0)
     {
-        gpio_put(BTN_PWR_PIN, 0);
+        gpio_put(BTN_PWR_PIN, 1);
+        btn_command_received = true;
     }
 }
 
@@ -85,11 +90,11 @@ int main()
 
     gpio_init(BTN_RST_PIN);
     gpio_set_dir(BTN_RST_PIN, GPIO_OUT);
-    gpio_put(BTN_RST_PIN, 0);
+    gpio_put(BTN_RST_PIN, 1);
 
     gpio_init(BTN_PWR_PIN);
     gpio_set_dir(BTN_PWR_PIN, GPIO_OUT);
-    gpio_put(BTN_PWR_PIN, 0);
+    gpio_put(BTN_PWR_PIN, 1);
 
     gpio_init(LED_HDD_PIN);
     gpio_pull_up(LED_HDD_PIN);
@@ -99,19 +104,41 @@ int main()
     gpio_pull_up(LED_PWR_PIN);
     gpio_set_dir(LED_PWR_PIN, GPIO_IN);
 
+#ifdef PICO_DEFAULT_LED_PIN
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+#endif
+
     bool btn_rst_state = false;
     bool btn_pwr_state = false;
     bool led_hdd_state = false;
     bool led_pwr_state = false;
     uint64_t last_update_sent = 0;
     uint64_t last_watchdog_reset = 0;
+    uint64_t builtin_led_off_at = 0;
     char message[6];
     while (true)
     {
         uint64_t now = time_us_64();
 
-        bool new_led_hdd_state = gpio_get(LED_HDD_PIN);
-        bool new_led_pwr_state = gpio_get(LED_PWR_PIN);
+#ifdef PICO_DEFAULT_LED_PIN
+        if (btn_command_received)
+        {
+            btn_command_received = false;
+            gpio_put(PICO_DEFAULT_LED_PIN, 1);
+            builtin_led_off_at = now + 200000;
+        }
+
+        if (builtin_led_off_at != 0 && now >= builtin_led_off_at)
+        {
+            gpio_put(PICO_DEFAULT_LED_PIN, 0);
+            builtin_led_off_at = 0;
+        }
+#endif
+
+        bool new_led_hdd_state = !gpio_get(LED_HDD_PIN);
+        bool new_led_pwr_state = !gpio_get(LED_PWR_PIN);
         bool new_btn_rst_state = gpio_get(BTN_RST_PIN);
         bool new_btn_pwr_state = gpio_get(BTN_PWR_PIN);
 

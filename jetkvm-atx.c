@@ -10,37 +10,43 @@
 
 #define UART_TX_PIN 16
 #define UART_RX_PIN 17
-#define BTN_RST_PIN 18
-#define BTN_PWR_PIN 19
-#define LED_HDD_PIN 20
-#define LED_PWR_PIN 21
+#define MB_BTN_RST_PIN 18
+#define MB_BTN_PWR_PIN 19
+#define MB_LED_HDD_PIN 20
+#define MB_LED_PWR_PIN 21
+#define CASE_BTN_RST_PIN 22
+#define CASE_BTN_PWR_PIN 23
+#define CASE_LED_HDD_PIN 24
+#define CASE_LED_PWR_PIN 26
 
 #define UART_BUF_SIZE 128
 static char uart_buf[UART_BUF_SIZE];
 static int uart_buf_pos = 0;
 static volatile bool btn_command_received = false;
+static volatile bool kvm_rst_pressed = false;
+static volatile bool kvm_pwr_pressed = false;
 
 void on_uart_line(const char *line)
 {
     printf("UART LINE: %s\n", line);
     if (strcmp(line, "BTN_RST_ON\n") == 0)
     {
-        gpio_put(BTN_RST_PIN, 0);
+        kvm_rst_pressed = true;
         btn_command_received = true;
     }
     else if (strcmp(line, "BTN_RST_OFF\n") == 0)
     {
-        gpio_put(BTN_RST_PIN, 1);
+        kvm_rst_pressed = false;
         btn_command_received = true;
     }
     else if (strcmp(line, "BTN_PWR_ON\n") == 0)
     {
-        gpio_put(BTN_PWR_PIN, 0);
+        kvm_pwr_pressed = true;
         btn_command_received = true;
     }
     else if (strcmp(line, "BTN_PWR_OFF\n") == 0)
     {
-        gpio_put(BTN_PWR_PIN, 1);
+        kvm_pwr_pressed = false;
         btn_command_received = true;
     }
 }
@@ -88,21 +94,37 @@ int main()
     irq_set_enabled(UART_IRQ, true);
     uart_set_irq_enables(UART_ID, true, false);
 
-    gpio_init(BTN_RST_PIN);
-    gpio_set_dir(BTN_RST_PIN, GPIO_OUT);
-    gpio_put(BTN_RST_PIN, 1);
+    gpio_init(MB_BTN_RST_PIN);
+    gpio_set_dir(MB_BTN_RST_PIN, GPIO_OUT);
+    gpio_put(MB_BTN_RST_PIN, 1);
 
-    gpio_init(BTN_PWR_PIN);
-    gpio_set_dir(BTN_PWR_PIN, GPIO_OUT);
-    gpio_put(BTN_PWR_PIN, 1);
+    gpio_init(MB_BTN_PWR_PIN);
+    gpio_set_dir(MB_BTN_PWR_PIN, GPIO_OUT);
+    gpio_put(MB_BTN_PWR_PIN, 1);
 
-    gpio_init(LED_HDD_PIN);
-    gpio_pull_up(LED_HDD_PIN);
-    gpio_set_dir(LED_HDD_PIN, GPIO_IN);
+    gpio_init(MB_LED_HDD_PIN);
+    gpio_pull_up(MB_LED_HDD_PIN);
+    gpio_set_dir(MB_LED_HDD_PIN, GPIO_IN);
 
-    gpio_init(LED_PWR_PIN);
-    gpio_pull_up(LED_PWR_PIN);
-    gpio_set_dir(LED_PWR_PIN, GPIO_IN);
+    gpio_init(MB_LED_PWR_PIN);
+    gpio_pull_up(MB_LED_PWR_PIN);
+    gpio_set_dir(MB_LED_PWR_PIN, GPIO_IN);
+
+    gpio_init(CASE_BTN_RST_PIN);
+    gpio_pull_up(CASE_BTN_RST_PIN);
+    gpio_set_dir(CASE_BTN_RST_PIN, GPIO_IN);
+
+    gpio_init(CASE_BTN_PWR_PIN);
+    gpio_pull_up(CASE_BTN_PWR_PIN);
+    gpio_set_dir(CASE_BTN_PWR_PIN, GPIO_IN);
+
+    gpio_init(CASE_LED_HDD_PIN);
+    gpio_set_dir(CASE_LED_HDD_PIN, GPIO_OUT);
+    gpio_put(CASE_LED_HDD_PIN, 1);
+
+    gpio_init(CASE_LED_PWR_PIN);
+    gpio_set_dir(CASE_LED_PWR_PIN, GPIO_OUT);
+    gpio_put(CASE_LED_PWR_PIN, 1);
 
 #ifdef PICO_DEFAULT_LED_PIN
     gpio_init(PICO_DEFAULT_LED_PIN);
@@ -137,10 +159,24 @@ int main()
         }
 #endif
 
-        bool new_led_hdd_state = !gpio_get(LED_HDD_PIN);
-        bool new_led_pwr_state = !gpio_get(LED_PWR_PIN);
-        bool new_btn_rst_state = gpio_get(BTN_RST_PIN);
-        bool new_btn_pwr_state = gpio_get(BTN_PWR_PIN);
+        bool mb_led_hdd_level = gpio_get(MB_LED_HDD_PIN);
+        bool mb_led_pwr_level = gpio_get(MB_LED_PWR_PIN);
+        bool case_rst_pressed = !gpio_get(CASE_BTN_RST_PIN);
+        bool case_pwr_pressed = !gpio_get(CASE_BTN_PWR_PIN);
+
+        bool mb_rst_pressed = kvm_rst_pressed || case_rst_pressed;
+        bool mb_pwr_pressed = kvm_pwr_pressed || case_pwr_pressed;
+
+        gpio_put(MB_BTN_RST_PIN, mb_rst_pressed ? 0 : 1);
+        gpio_put(MB_BTN_PWR_PIN, mb_pwr_pressed ? 0 : 1);
+
+        gpio_put(CASE_LED_HDD_PIN, mb_led_hdd_level);
+        gpio_put(CASE_LED_PWR_PIN, mb_led_pwr_level);
+
+        bool new_led_hdd_state = !mb_led_hdd_level;
+        bool new_led_pwr_state = !mb_led_pwr_level;
+        bool new_btn_rst_state = gpio_get(MB_BTN_RST_PIN);
+        bool new_btn_pwr_state = gpio_get(MB_BTN_PWR_PIN);
 
         // printf("LED_HDD_PIN: %d\n", new_led_hdd_state);
         // printf("LED_PWR_PIN: %d\n", new_led_pwr_state);

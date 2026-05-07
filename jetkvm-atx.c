@@ -129,7 +129,7 @@ int main()
 #ifdef PICO_DEFAULT_LED_PIN
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
 #endif
 
     bool btn_rst_state = false;
@@ -139,15 +139,27 @@ int main()
     uint64_t last_update_sent = 0;
     uint64_t last_watchdog_reset = 0;
     uint64_t builtin_led_off_at = 0;
+#ifdef PICO_DEFAULT_LED_PIN
+    builtin_led_off_at = time_us_64() + 3000000;
+#endif
     char message[6];
     while (true)
     {
         uint64_t now = time_us_64();
 
+        bool case_rst_pressed = !gpio_get(CASE_BTN_RST_PIN);
+        bool case_pwr_pressed = !gpio_get(CASE_BTN_PWR_PIN);
+
 #ifdef PICO_DEFAULT_LED_PIN
         if (btn_command_received)
         {
             btn_command_received = false;
+            gpio_put(PICO_DEFAULT_LED_PIN, 1);
+            builtin_led_off_at = now + 200000;
+        }
+
+        if (case_rst_pressed || case_pwr_pressed)
+        {
             gpio_put(PICO_DEFAULT_LED_PIN, 1);
             builtin_led_off_at = now + 200000;
         }
@@ -161,8 +173,6 @@ int main()
 
         bool mb_led_hdd_level = gpio_get(MB_LED_HDD_PIN);
         bool mb_led_pwr_level = gpio_get(MB_LED_PWR_PIN);
-        bool case_rst_pressed = !gpio_get(CASE_BTN_RST_PIN);
-        bool case_pwr_pressed = !gpio_get(CASE_BTN_PWR_PIN);
 
         bool mb_rst_pressed = kvm_rst_pressed || case_rst_pressed;
         bool mb_pwr_pressed = kvm_pwr_pressed || case_pwr_pressed;

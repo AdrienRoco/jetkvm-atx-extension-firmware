@@ -8,16 +8,16 @@
 #define UART_ID uart0
 #define BAUD_RATE 115200
 
-#define UART_TX_PIN 16
-#define UART_RX_PIN 17
-#define MB_BTN_RST_PIN 18
-#define MB_BTN_PWR_PIN 19
-#define MB_LED_HDD_PIN 20
-#define MB_LED_PWR_PIN 21
-#define CASE_BTN_RST_PIN 22
-#define CASE_BTN_PWR_PIN 23
-#define CASE_LED_HDD_PIN 24
-#define CASE_LED_PWR_PIN 26
+#define UART_TX_PIN      0   // physical pin 1
+#define UART_RX_PIN      1   // physical pin 2
+#define MB_BTN_RST_PIN   2   // physical pin 4
+#define MB_BTN_PWR_PIN   3   // physical pin 5
+#define MB_LED_HDD_PIN   4   // physical pin 6
+#define MB_LED_PWR_PIN   5   // physical pin 7
+#define CASE_BTN_RST_PIN 6   // physical pin 9
+#define CASE_BTN_PWR_PIN 7   // physical pin 10
+#define CASE_LED_HDD_PIN 8   // physical pin 11
+#define CASE_LED_PWR_PIN 10  // physical pin 14
 
 #define UART_BUF_SIZE 128
 static char uart_buf[UART_BUF_SIZE];
